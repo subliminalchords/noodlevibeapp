@@ -16,7 +16,7 @@ export function TopBar({ session }: TopBarProps) {
   function handleEnd() {
     if (!confirm('End this session?')) return;
     endSession(session.id);
-    router.push(`/campaigns/${session.campaignId}`);
+    router.push(`/campaigns/detail/?id=${session.campaignId}`);
   }
 
   return (

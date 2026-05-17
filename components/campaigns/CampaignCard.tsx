@@ -16,7 +16,7 @@ export function CampaignCard({ campaign, onEdit, onDelete }: CampaignCardProps) 
       <div className={`${campaign.color} h-1.5 w-full`} />
       <div className="px-4 py-4">
         <div className="flex items-start justify-between gap-3">
-          <Link href={`/campaigns/${campaign.id}`} className="flex-1 min-w-0">
+          <Link href={`/campaigns/detail/?id=${campaign.id}`} className="flex-1 min-w-0">
             <h3 className="font-semibold text-white truncate">{campaign.name}</h3>
             <p className="text-xs text-gray-400 mt-0.5">{campaign.system}</p>
           </Link>
@@ -40,7 +40,7 @@ export function CampaignCard({ campaign, onEdit, onDelete }: CampaignCardProps) 
             </button>
           </div>
         </div>
-        <Link href={`/campaigns/${campaign.id}`} className="block mt-3">
+        <Link href={`/campaigns/detail/?id=${campaign.id}`} className="block mt-3">
           <div className="flex gap-4 text-xs text-gray-500">
             <span>{campaign.sessionCount} session{campaign.sessionCount !== 1 ? 's' : ''}</span>
             {campaign.lastSessionAt && <span>Last: {formatDate(campaign.lastSessionAt)}</span>}

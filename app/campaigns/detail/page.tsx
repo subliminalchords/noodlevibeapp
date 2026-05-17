@@ -1,13 +1,15 @@
 'use client';
 
-import { useParams, useRouter } from 'next/navigation';
+import { Suspense } from 'react';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { useStore } from '@/lib/hooks/useStore';
 import { SessionCard } from '@/components/campaigns/SessionCard';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { BottomNav } from '@/components/layout/BottomNav';
 
-export default function CampaignDetailPage() {
-  const { id } = useParams<{ id: string }>();
+function CampaignDetailInner() {
+  const searchParams = useSearchParams();
+  const id = searchParams.get('id') ?? '';
   const router = useRouter();
 
   const campaign = useStore((s) => s.campaigns[id]);
@@ -29,23 +31,24 @@ export default function CampaignDetailPage() {
     .sort((a, b) => b.startedAt.localeCompare(a.startedAt));
 
   const activeSession = activeSessionId ? sessions[activeSessionId] : null;
-  const hasActiveLiveSession = activeSession && activeSession.endedAt === null && activeSession.campaignId === id;
+  const hasActiveLiveSession =
+    activeSession && activeSession.endedAt === null && activeSession.campaignId === id;
 
   function handleStartSession() {
     const newSessionId = createSession(id);
-    if (newSessionId) router.push(`/campaigns/${id}/sessions/${newSessionId}`);
+    if (newSessionId) router.push(`/session/?campaignId=${id}&sessionId=${newSessionId}`);
   }
 
   function handleResumeSession() {
-    if (activeSession) router.push(`/campaigns/${id}/sessions/${activeSession.id}`);
+    if (activeSession)
+      router.push(`/session/?campaignId=${id}&sessionId=${activeSession.id}`);
   }
 
   return (
     <div className="flex flex-col h-full">
-      {/* Header */}
       <header className="px-4 pt-6 pb-4 safe-area-top">
         <button
-          onClick={() => router.push('/campaigns')}
+          onClick={() => router.push('/campaigns/')}
           className="text-xs text-gray-500 hover:text-gray-300 mb-3 flex items-center gap-1 transition-colors"
         >
           ← Campaigns
@@ -74,9 +77,10 @@ export default function CampaignDetailPage() {
         </div>
       </header>
 
-      {/* Session list */}
       <main className="flex-1 overflow-y-auto px-4 space-y-2 pb-4">
-        <p className="text-xs text-gray-500 mb-3">{campaignSessions.length} session{campaignSessions.length !== 1 ? 's' : ''}</p>
+        <p className="text-xs text-gray-500 mb-3">
+          {campaignSessions.length} session{campaignSessions.length !== 1 ? 's' : ''}
+        </p>
         {campaignSessions.length === 0 ? (
           <EmptyState
             icon="📖"
@@ -93,5 +97,13 @@ export default function CampaignDetailPage() {
 
       <BottomNav />
     </div>
+  );
+}
+
+export default function CampaignDetailPage() {
+  return (
+    <Suspense>
+      <CampaignDetailInner />
+    </Suspense>
   );
 }

@@ -13,9 +13,9 @@ export default function Home() {
   useEffect(() => {
     const activeSession = activeSessionId ? sessions[activeSessionId] : null;
     if (activeSession && activeSession.endedAt === null) {
-      router.replace(`/campaigns/${activeSession.campaignId}/sessions/${activeSession.id}`);
+      router.replace(`/session/?campaignId=${activeSession.campaignId}&sessionId=${activeSession.id}`);
     } else {
-      router.replace('/campaigns');
+      router.replace('/campaigns/');
     }
   }, [activeSessionId, activeCampaignId, sessions, router]);
 
