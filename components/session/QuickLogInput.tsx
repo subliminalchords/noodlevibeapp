@@ -1,7 +1,6 @@
 'use client';
 
 import { useRef, useState } from 'react';
-import { EntryType } from '@/lib/types';
 import { parseEntryType } from '@/lib/utils';
 import { useStore } from '@/lib/hooks/useStore';
 
@@ -19,16 +18,10 @@ export function QuickLogInput({ sessionId, campaignId }: QuickLogInputProps) {
   const [starred, setStarred] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  function getEntryType(): EntryType {
-    const detectedType = parseEntryType(value);
-    if (detectedType !== 'note') return detectedType;
-    if (selectedType !== 'all') return selectedType as EntryType;
-    return 'note';
-  }
-
   function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
     const text = e.target.value;
     setValue(text);
+    // Sync the chip highlight to the first prefix in the text (visual hint only)
     const detected = parseEntryType(text);
     if (detected !== 'note') setSelectedType(detected);
   }
@@ -36,8 +29,7 @@ export function QuickLogInput({ sessionId, campaignId }: QuickLogInputProps) {
   function submit() {
     const trimmed = value.trim();
     if (!trimmed) return;
-    const type = getEntryType();
-    addEntry({ sessionId, campaignId, type, content: trimmed, starred });
+    addEntry({ sessionId, campaignId, content: trimmed, starred });
     setValue('');
     setStarred(false);
     // Synchronous re-focus keeps iOS keyboard open
@@ -51,7 +43,7 @@ export function QuickLogInput({ sessionId, campaignId }: QuickLogInputProps) {
     }
   }
 
-  const activeType = getEntryType();
+  const chipLabel = selectedType === 'all' ? 'note' : selectedType;
 
   return (
     <div className="flex items-center gap-2 px-3 py-2 bg-gray-950 border-t border-gray-800 safe-area-bottom">
@@ -72,7 +64,7 @@ export function QuickLogInput({ sessionId, campaignId }: QuickLogInputProps) {
           value={value}
           onChange={handleChange}
           onKeyDown={handleKeyDown}
-          placeholder={`Log a ${activeType === 'note' ? 'note' : activeType}… (@npc #place >decision !consequence *next)`}
+          placeholder={`Log a ${chipLabel}… mix types: @npc #place >decision !consequence *next`}
           autoFocus
           autoComplete="off"
           autoCorrect="off"

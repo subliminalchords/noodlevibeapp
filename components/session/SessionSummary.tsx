@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation';
 import { Session, EntryType } from '@/lib/types';
 import { ENTRY_TYPE_LABELS } from '@/lib/constants';
 import { useStore } from '@/lib/hooks/useStore';
-import { formatDate, formatDuration, stripPrefix } from '@/lib/utils';
+import { formatDate, formatDuration } from '@/lib/utils';
 import { EntryTypePill } from './EntryTypePill';
 
 const SUMMARY_ORDER: EntryType[] = ['next', 'decision', 'consequence', 'npc', 'location', 'note'];
@@ -18,21 +18,23 @@ export function SessionSummary({ session, campaignId }: SessionSummaryProps) {
   const router = useRouter();
   const allEntries = useStore((s) => s.entries[session.id] ?? []);
   const starred = allEntries.filter((e) => e.starred);
+
+  // An entry can appear in multiple sections if it has multiple tags
   const byType = Object.fromEntries(
-    SUMMARY_ORDER.map((type) => [type, allEntries.filter((e) => e.type === type)])
+    SUMMARY_ORDER.map((type) => [type, allEntries.filter((e) => e.tags.includes(type))])
   ) as Record<EntryType, typeof allEntries>;
 
   function copyMarkdown() {
     const lines: string[] = [`# ${session.name}`, `*${formatDate(session.startedAt)}*`, ''];
 
     if (starred.length > 0) {
-      lines.push('## ★ Starred', ...starred.map((e) => `- ${stripPrefix(e.content)}`), '');
+      lines.push('## ★ Starred', ...starred.map((e) => `- ${e.content}`), '');
     }
 
     for (const type of SUMMARY_ORDER) {
       const entries = byType[type];
       if (entries.length === 0) continue;
-      lines.push(`## ${ENTRY_TYPE_LABELS[type]}`, ...entries.map((e) => `- ${stripPrefix(e.content)}`), '');
+      lines.push(`## ${ENTRY_TYPE_LABELS[type]}`, ...entries.map((e) => `- ${e.content}`), '');
     }
 
     navigator.clipboard.writeText(lines.join('\n'));
@@ -80,18 +82,20 @@ export function SessionSummary({ session, campaignId }: SessionSummaryProps) {
         {starred.length > 0 && (
           <section>
             <h2 className="text-xs font-semibold text-yellow-400 uppercase tracking-wider mb-2">★ Starred</h2>
-            <ul className="space-y-1.5">
+            <ul className="space-y-2">
               {starred.map((e) => (
-                <li key={e.id} className="flex gap-2 text-sm text-gray-200">
-                  <EntryTypePill type={e.type} />
-                  <span className="flex-1">{stripPrefix(e.content)}</span>
+                <li key={e.id} className="flex gap-2 items-start text-sm text-gray-200">
+                  <div className="flex gap-1 flex-wrap flex-shrink-0">
+                    {e.tags.map((tag) => <EntryTypePill key={tag} type={tag} />)}
+                  </div>
+                  <span className="flex-1">{e.content}</span>
                 </li>
               ))}
             </ul>
           </section>
         )}
 
-        {/* By type */}
+        {/* By type — multi-tag entries appear in each matching section */}
         {SUMMARY_ORDER.map((type) => {
           const entries = byType[type];
           if (entries.length === 0) return null;
@@ -103,8 +107,8 @@ export function SessionSummary({ session, campaignId }: SessionSummaryProps) {
               <ul className="space-y-1.5">
                 {entries.map((e) => (
                   <li key={e.id} className="text-sm text-gray-200 flex items-start gap-2">
-                    {e.starred && <span className="text-yellow-400 mt-0.5 flex-shrink-0">★</span>}
-                    <span>{stripPrefix(e.content)}</span>
+                    {e.starred && <span className="text-yellow-400 flex-shrink-0">★</span>}
+                    <span>{e.content}</span>
                   </li>
                 ))}
               </ul>

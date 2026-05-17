@@ -2,8 +2,9 @@
 
 import { useRef, useState } from 'react';
 import { Entry } from '@/lib/types';
+import { tokenizeContent } from '@/lib/utils';
 import { ENTRY_TYPE_COLORS } from '@/lib/constants';
-import { formatRelativeTime, stripPrefix } from '@/lib/utils';
+import { formatRelativeTime } from '@/lib/utils';
 import { EntryTypePill } from './EntryTypePill';
 import { useStore } from '@/lib/hooks/useStore';
 
@@ -12,10 +13,28 @@ interface EntryCardProps {
   sessionId: string;
 }
 
+function RichEntryText({ content }: { content: string }) {
+  const tokens = tokenizeContent(content);
+  return (
+    <p className="text-sm text-gray-100 leading-relaxed break-words">
+      {tokens.map((token, i) => {
+        const spacer = i < tokens.length - 1 ? ' ' : '';
+        if (token.type) {
+          return (
+            <span key={i} className={`${ENTRY_TYPE_COLORS[token.type].text} font-medium`}>
+              {token.text}{spacer}
+            </span>
+          );
+        }
+        return <span key={i}>{token.text}{spacer}</span>;
+      })}
+    </p>
+  );
+}
+
 export function EntryCard({ entry, sessionId }: EntryCardProps) {
   const toggleStar = useStore((s) => s.toggleStarEntry);
   const deleteEntry = useStore((s) => s.deleteEntry);
-  const colors = ENTRY_TYPE_COLORS[entry.type];
 
   const startX = useRef(0);
   const [swipeX, setSwipeX] = useState(0);
@@ -57,7 +76,7 @@ export function EntryCard({ entry, sessionId }: EntryCardProps) {
       </div>
 
       <div
-        className={`relative flex gap-3 px-4 py-3 border-b border-gray-800 ${colors.bg}/30 touch-pan-y select-none`}
+        className="relative flex gap-3 px-4 py-3 border-b border-gray-800 touch-pan-y select-none"
         style={{
           transform: `translateX(${clampedX}px)`,
           transition: swiping ? 'none' : 'transform 80ms ease-out',
@@ -68,13 +87,13 @@ export function EntryCard({ entry, sessionId }: EntryCardProps) {
         onPointerLeave={onPointerUp}
       >
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-1">
-            <EntryTypePill type={entry.type} />
-            <span className="text-xs text-gray-500">{formatRelativeTime(entry.createdAt)}</span>
+          <div className="flex items-center gap-1.5 flex-wrap mb-1">
+            {entry.tags.map((tag) => (
+              <EntryTypePill key={tag} type={tag} />
+            ))}
+            <span className="text-xs text-gray-500 ml-auto">{formatRelativeTime(entry.createdAt)}</span>
           </div>
-          <p className="text-sm text-gray-100 leading-relaxed break-words">
-            {stripPrefix(entry.content)}
-          </p>
+          <RichEntryText content={entry.content} />
         </div>
         <button
           className={`flex-shrink-0 text-lg mt-0.5 transition-colors ${

@@ -111,13 +111,13 @@ export function endSession(schema: StorageSchema, sessionId: string): StorageSch
 
 export function addEntry(
   schema: StorageSchema,
-  args: { sessionId: string; campaignId: string; type: EntryType; content: string; starred?: boolean }
+  args: { sessionId: string; campaignId: string; tags: EntryType[]; content: string; starred?: boolean }
 ): StorageSchema {
   const entry: Entry = {
     id: newId(),
     sessionId: args.sessionId,
     campaignId: args.campaignId,
-    type: args.type,
+    tags: args.tags,
     content: args.content,
     createdAt: new Date().toISOString(),
     starred: args.starred ?? false,
