@@ -4,6 +4,7 @@ import { create } from 'zustand';
 import { subscribeWithSelector } from 'zustand/middleware';
 import { StorageSchema, EntryType, Entry } from '../types';
 import { readStorage, writeStorage, clearStorage, importStorage } from '../storage';
+import { parseInlineTags } from '../utils';
 import * as M from '../mutations';
 
 interface UIState {
@@ -23,7 +24,7 @@ interface Actions {
   createSession: (campaignId: string) => string;
   endSession: (sessionId: string) => void;
   // Entries
-  addEntry: (args: { sessionId: string; campaignId: string; type: EntryType; content: string; starred?: boolean }) => void;
+  addEntry: (args: { sessionId: string; campaignId: string; content: string; starred?: boolean }) => void;
   toggleStarEntry: (args: { sessionId: string; entryId: string }) => void;
   deleteEntry: (args: { sessionId: string; entryId: string }) => void;
   undoDelete: () => void;
@@ -77,8 +78,15 @@ export const useStore = create<State & Actions>()(
       endSession(sessionId) {
         mutate(set, (s) => M.endSession(s, sessionId));
       },
-      addEntry(args) {
-        mutate(set, (s) => M.addEntry(s, args));
+      addEntry({ sessionId, campaignId, content, starred }) {
+        const detectedTags = parseInlineTags(content);
+        const { selectedType } = get();
+        // If no inline prefix found and a chip type is active, apply it
+        const tags =
+          detectedTags[0] === 'note' && selectedType !== 'all'
+            ? [selectedType as EntryType]
+            : detectedTags;
+        mutate(set, (s) => M.addEntry(s, { sessionId, campaignId, tags, content, starred }));
         if (get().settings.hapticFeedback && navigator.vibrate) navigator.vibrate(20);
       },
       toggleStarEntry(args) {

@@ -10,6 +10,31 @@ export function parseEntryType(text: string): EntryType {
   return ENTRY_PREFIX_MAP[first] ?? 'note';
 }
 
+// Walk every whitespace-separated word, collect unique types from prefix chars.
+// Falls back to ['note'] if no prefixes found.
+export function parseInlineTags(text: string): EntryType[] {
+  const seen = new Set<EntryType>();
+  for (const word of text.trim().split(/\s+/)) {
+    const type = ENTRY_PREFIX_MAP[word[0]];
+    if (type) seen.add(type);
+  }
+  return seen.size > 0 ? Array.from(seen) : ['note'];
+}
+
+export interface ContentToken {
+  text: string;
+  type: EntryType | null;
+}
+
+// Split text into tokens for rich inline rendering.
+// Each word either carries a type (prefix match) or is null (plain text).
+export function tokenizeContent(text: string): ContentToken[] {
+  return text.trim().split(/\s+/).map((word) => ({
+    text: word,
+    type: ENTRY_PREFIX_MAP[word[0]] ?? null,
+  }));
+}
+
 export function formatDuration(startedAt: string, endedAt?: string | null): string {
   const start = new Date(startedAt).getTime();
   const end = endedAt ? new Date(endedAt).getTime() : Date.now();

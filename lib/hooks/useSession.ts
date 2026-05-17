@@ -13,7 +13,7 @@ export function useActiveSession() {
 export function useSessionEntries(sessionId: string, filter: EntryType | 'all' = 'all') {
   const entries = useStore((s) => s.entries[sessionId] ?? []);
   if (filter === 'all') return entries;
-  return entries.filter((e) => e.type === filter);
+  return entries.filter((e) => e.tags.includes(filter));
 }
 
 export function useActiveCampaign() {

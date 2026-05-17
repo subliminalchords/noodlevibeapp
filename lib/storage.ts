@@ -24,7 +24,15 @@ export function readStorage(): StorageSchema {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return getDefaultStorage();
     const parsed = JSON.parse(raw) as StorageSchema;
-    // Ensure all top-level keys exist (handles schema additions)
+    // Migrate legacy entries: type → tags
+    for (const sessionEntries of Object.values(parsed.entries ?? {})) {
+      for (const entry of sessionEntries) {
+        const legacy = entry as unknown as Record<string, unknown>;
+        if (legacy.type && !entry.tags) {
+          entry.tags = [legacy.type as import('./types').EntryType];
+        }
+      }
+    }
     return {
       ...getDefaultStorage(),
       ...parsed,

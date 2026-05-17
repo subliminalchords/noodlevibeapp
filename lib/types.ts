@@ -10,7 +10,7 @@ export interface Entry {
   id: string;
   sessionId: string;
   campaignId: string;
-  type: EntryType;
+  tags: EntryType[];
   content: string;
   createdAt: string;
   starred: boolean;
