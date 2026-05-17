@@ -15,8 +15,12 @@ export interface ContentToken {
   type: EntryType | null;
 }
 
+// Coordinating conjunctions stripped from the tail of a segment when followed by another
+const TRAILING_CONNECTORS = new Set(['for', 'and', 'nor', 'but', 'or', 'yet', 'so', 'then']);
+
 // A prefix captures all text from that prefix until the next prefix-at-word-boundary
-// or end of string. Falls back to ['note'] if no prefixes found.
+// or end of string. Trailing connector words (and, but, or…) before the next prefix
+// are split off as plain tokens so they don't pollute the entity text.
 export function tokenizeContent(text: string): ContentToken[] {
   const trimmed = text.trim();
 
@@ -39,10 +43,18 @@ export function tokenizeContent(text: string): ContentToken[] {
 
   for (let i = 0; i < starts.length; i++) {
     const { pos, type } = starts[i];
-    // Segment ends at the space before the next prefix, or at end of string
     const nextPos = i + 1 < starts.length ? starts[i + 1].pos - 1 : trimmed.length;
-    const segText = trimmed.slice(pos + 1, nextPos).trim();
+    const rawText = trimmed.slice(pos + 1, nextPos).trim();
+    const isLast = i + 1 >= starts.length;
+
+    // Strip trailing connector from non-final segments so it doesn't pollute entity text
+    const words = rawText.split(' ');
+    const lastWord = words[words.length - 1]?.toLowerCase();
+    const hasConnector = !isLast && words.length > 1 && TRAILING_CONNECTORS.has(lastWord);
+
+    const segText = hasConnector ? words.slice(0, -1).join(' ') : rawText;
     if (segText) tokens.push({ text: segText, type });
+    if (hasConnector) tokens.push({ text: words[words.length - 1], type: null });
   }
 
   return tokens;
