@@ -15,47 +15,54 @@ export interface ContentToken {
   type: EntryType | null;
 }
 
-// Coordinating conjunctions stripped from the tail of a segment when followed by another
-const TRAILING_CONNECTORS = new Set(['for', 'and', 'nor', 'but', 'or', 'yet', 'so', 'then']);
-
-// A prefix captures all text from that prefix until the next prefix-at-word-boundary
-// or end of string. Trailing connector words (and, but, or…) before the next prefix
-// are split off as plain tokens so they don't pollute the entity text.
+// A prefix char at word-start opens a tag. Single-word by default: @eduardo
+// Wrap with the same char as a closing delimiter for multi-word: @Eduardo, the Indefensible@
+// Closing delimiter: same char, not preceded by space, followed by space or end of string.
 export function tokenizeContent(text: string): ContentToken[] {
-  const trimmed = text.trim();
-
-  // Find all segment-start positions: prefix chars at pos 0 or immediately after a space
-  const starts: Array<{ pos: number; type: EntryType }> = [];
-  for (let i = 0; i < trimmed.length; i++) {
-    const type = ENTRY_PREFIX_MAP[trimmed[i]];
-    if (type && (i === 0 || trimmed[i - 1] === ' ')) starts.push({ pos: i, type });
-  }
-
-  if (starts.length === 0) return [{ text: trimmed, type: null }];
-
   const tokens: ContentToken[] = [];
+  let i = 0;
+  let plainStart = 0;
 
-  // Untagged text before the first prefix (if any)
-  if (starts[0].pos > 0) {
-    const pre = trimmed.slice(0, starts[0].pos).trim();
-    if (pre) tokens.push({ text: pre, type: null });
+  while (i < text.length) {
+    const char = text[i];
+    const prefixType = ENTRY_PREFIX_MAP[char];
+    const isOpening = prefixType !== undefined && (i === 0 || text[i - 1] === ' ');
+
+    if (isOpening) {
+      const plain = text.slice(plainStart, i).trim();
+      if (plain) tokens.push({ text: plain, type: null });
+
+      let closeIdx = -1;
+      for (let j = i + 1; j < text.length; j++) {
+        if (
+          text[j] === char &&
+          text[j - 1] !== ' ' &&
+          (j + 1 >= text.length || text[j + 1] === ' ')
+        ) {
+          closeIdx = j;
+          break;
+        }
+      }
+
+      if (closeIdx !== -1) {
+        const entityText = text.slice(i + 1, closeIdx).trim();
+        if (entityText) tokens.push({ text: entityText, type: prefixType });
+        i = closeIdx + 1;
+      } else {
+        const spaceIdx = text.indexOf(' ', i + 1);
+        const wordEnd = spaceIdx !== -1 ? spaceIdx : text.length;
+        const word = text.slice(i + 1, wordEnd).trim();
+        if (word) tokens.push({ text: word, type: prefixType });
+        i = wordEnd;
+      }
+      plainStart = i;
+    } else {
+      i++;
+    }
   }
 
-  for (let i = 0; i < starts.length; i++) {
-    const { pos, type } = starts[i];
-    const nextPos = i + 1 < starts.length ? starts[i + 1].pos - 1 : trimmed.length;
-    const rawText = trimmed.slice(pos + 1, nextPos).trim();
-    const isLast = i + 1 >= starts.length;
-
-    // Strip trailing connector from non-final segments so it doesn't pollute entity text
-    const words = rawText.split(' ');
-    const lastWord = words[words.length - 1]?.toLowerCase();
-    const hasConnector = !isLast && words.length > 1 && TRAILING_CONNECTORS.has(lastWord);
-
-    const segText = hasConnector ? words.slice(0, -1).join(' ') : rawText;
-    if (segText) tokens.push({ text: segText, type });
-    if (hasConnector) tokens.push({ text: words[words.length - 1], type: null });
-  }
+  const plain = text.slice(plainStart).trim();
+  if (plain) tokens.push({ text: plain, type: null });
 
   return tokens;
 }
