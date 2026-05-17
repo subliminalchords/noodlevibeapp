@@ -1,6 +1,7 @@
 'use client';
 
-import { useParams, useSearchParams } from 'next/navigation';
+import { Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useStore } from '@/lib/hooks/useStore';
 import { TopBar } from '@/components/layout/TopBar';
 import { EntryFeed } from '@/components/session/EntryFeed';
@@ -9,9 +10,10 @@ import { QuickLogInput } from '@/components/session/QuickLogInput';
 import { SessionSummary } from '@/components/session/SessionSummary';
 import { BottomNav } from '@/components/layout/BottomNav';
 
-export default function SessionPage() {
-  const { id, sessionId } = useParams<{ id: string; sessionId: string }>();
+function SessionPageInner() {
   const searchParams = useSearchParams();
+  const campaignId = searchParams.get('campaignId') ?? '';
+  const sessionId = searchParams.get('sessionId') ?? '';
   const isSummary = searchParams.get('view') === 'summary';
 
   const session = useStore((s) => s.sessions[sessionId]);
@@ -29,7 +31,7 @@ export default function SessionPage() {
   if (isSummary || !isActive) {
     return (
       <div className="flex flex-col h-full">
-        <SessionSummary session={session} campaignId={id} />
+        <SessionSummary session={session} campaignId={campaignId} />
         <BottomNav />
       </div>
     );
@@ -40,7 +42,15 @@ export default function SessionPage() {
       <TopBar session={session} />
       <EntryFeed sessionId={sessionId} />
       <TypeChipBar />
-      <QuickLogInput sessionId={sessionId} campaignId={id} />
+      <QuickLogInput sessionId={sessionId} campaignId={campaignId} />
     </div>
+  );
+}
+
+export default function SessionPage() {
+  return (
+    <Suspense>
+      <SessionPageInner />
+    </Suspense>
   );
 }

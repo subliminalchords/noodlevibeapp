@@ -13,7 +13,7 @@ export function SessionCard({ session }: SessionCardProps) {
 
   return (
     <Link
-      href={`/campaigns/${session.campaignId}/sessions/${session.id}`}
+      href={`/session/?campaignId=${session.campaignId}&sessionId=${session.id}`}
       className={`block rounded-xl border px-4 py-3.5 transition-colors ${
         isActive
           ? 'border-green-700 bg-green-950/30 hover:bg-green-950/50'

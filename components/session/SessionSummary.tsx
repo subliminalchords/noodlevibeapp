@@ -43,7 +43,7 @@ export function SessionSummary({ session, campaignId }: SessionSummaryProps) {
       {/* Header */}
       <header className="px-4 pt-6 pb-4 safe-area-top border-b border-gray-800">
         <button
-          onClick={() => router.push(`/campaigns/${campaignId}`)}
+          onClick={() => router.push(`/campaigns/detail/?id=${campaignId}`)}
           className="text-xs text-gray-500 hover:text-gray-300 mb-3 flex items-center gap-1 transition-colors"
         >
           ← Campaign

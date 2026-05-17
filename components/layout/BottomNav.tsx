@@ -10,7 +10,7 @@ export function BottomNav() {
   const sessions = useStore((s) => s.sessions);
 
   const activeSession = activeSessionId ? sessions[activeSessionId] : null;
-  const isOnSession = pathname.includes('/sessions/');
+  const isOnSession = pathname.startsWith('/session');
 
   const tabs = [
     {
@@ -25,7 +25,7 @@ export function BottomNav() {
     },
     ...(activeSession
       ? [{
-          href: `/campaigns/${activeSession.campaignId}/sessions/${activeSession.id}`,
+          href: `/session/?campaignId=${activeSession.campaignId}&sessionId=${activeSession.id}`,
           label: 'Live',
           icon: (
             <div className="relative">
