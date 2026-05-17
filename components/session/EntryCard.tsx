@@ -18,15 +18,15 @@ function RichEntryText({ content }: { content: string }) {
   return (
     <p className="text-sm text-gray-100 leading-relaxed break-words">
       {tokens.map((token, i) => {
+        const spacer = i < tokens.length - 1 ? ' ' : '';
         if (token.type) {
-          const color = ENTRY_TYPE_COLORS[token.type].text;
           return (
-            <span key={i} className={`${color} font-medium`}>
-              {token.text}{' '}
+            <span key={i} className={`${ENTRY_TYPE_COLORS[token.type].text} font-medium`}>
+              {token.text}{spacer}
             </span>
           );
         }
-        return <span key={i}>{token.text}{' '}</span>;
+        return <span key={i}>{token.text}{spacer}</span>;
       })}
     </p>
   );

@@ -10,29 +10,51 @@ export function parseEntryType(text: string): EntryType {
   return ENTRY_PREFIX_MAP[first] ?? 'note';
 }
 
-// Walk every whitespace-separated word, collect unique types from prefix chars.
-// Falls back to ['note'] if no prefixes found.
-export function parseInlineTags(text: string): EntryType[] {
-  const seen = new Set<EntryType>();
-  for (const word of text.trim().split(/\s+/)) {
-    const type = ENTRY_PREFIX_MAP[word[0]];
-    if (type) seen.add(type);
-  }
-  return seen.size > 0 ? Array.from(seen) : ['note'];
-}
-
 export interface ContentToken {
   text: string;
   type: EntryType | null;
 }
 
-// Split text into tokens for rich inline rendering.
-// Each word either carries a type (prefix match) or is null (plain text).
+// A prefix captures all text from that prefix until the next prefix-at-word-boundary
+// or end of string. Falls back to ['note'] if no prefixes found.
 export function tokenizeContent(text: string): ContentToken[] {
-  return text.trim().split(/\s+/).map((word) => ({
-    text: word,
-    type: ENTRY_PREFIX_MAP[word[0]] ?? null,
-  }));
+  const trimmed = text.trim();
+
+  // Find all segment-start positions: prefix chars at pos 0 or immediately after a space
+  const starts: Array<{ pos: number; type: EntryType }> = [];
+  for (let i = 0; i < trimmed.length; i++) {
+    const type = ENTRY_PREFIX_MAP[trimmed[i]];
+    if (type && (i === 0 || trimmed[i - 1] === ' ')) starts.push({ pos: i, type });
+  }
+
+  if (starts.length === 0) return [{ text: trimmed, type: null }];
+
+  const tokens: ContentToken[] = [];
+
+  // Untagged text before the first prefix (if any)
+  if (starts[0].pos > 0) {
+    const pre = trimmed.slice(0, starts[0].pos).trim();
+    if (pre) tokens.push({ text: pre, type: null });
+  }
+
+  for (let i = 0; i < starts.length; i++) {
+    const { pos, type } = starts[i];
+    // Segment ends at the space before the next prefix, or at end of string
+    const nextPos = i + 1 < starts.length ? starts[i + 1].pos - 1 : trimmed.length;
+    const segText = trimmed.slice(pos + 1, nextPos).trim();
+    if (segText) tokens.push({ text: segText, type });
+  }
+
+  return tokens;
+}
+
+// Collect unique types from all segments. Falls back to ['note'] if none found.
+export function parseInlineTags(text: string): EntryType[] {
+  const types = tokenizeContent(text)
+    .filter((t) => t.type !== null)
+    .map((t) => t.type as EntryType);
+  const unique = Array.from(new Set(types));
+  return unique.length > 0 ? unique : ['note'];
 }
 
 export function formatDuration(startedAt: string, endedAt?: string | null): string {
